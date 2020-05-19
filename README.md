@@ -2,12 +2,12 @@
 
 
 Accelerating Magnetic Resonance Imaging (MRI) by acquiring fewer measurements has the
-potential to reduce medical costs, minimize stress to patients and make MR imaging 
+potential to reduce medical costs, minimize stress to patients and make MR imaging
 possible in applications where it is currently prohibitively slow or expensive.
 
-[fastMRI](http://fastMRI.org) is collaborative research project from Facebook AI Research (FAIR)
+[fastMRI](http://fastMRI.org) is a collaborative research project from Facebook AI Research (FAIR)
 and NYU Langone Health to investigate the use of AI to make MRI scans faster.
-NYU Langone Health has released fully anonymized Knee MRI datasets that can
+NYU Langone Health has released fully anonymized knee and brain MRI datasets that can
 be downloaded from [the fastMRI dataset page](https://fastmri.med.nyu.edu/).
 
 
@@ -53,18 +53,51 @@ information about using the data loaders.
 ## Testing
 Run `pytest`.
 
+## Training a model
+This [jupyter notebook](https://github.com/facebookresearch/fastMRI/blob/master/fastMRI_tutorial.ipynb) contains a simple tutorial explaining how to get started working with the data.
+
+The following explains how to work with the provided PyTorch data loaders and transforms and training your models. Please look at https://github.com/facebookresearch/fastMRI/blob/master/models/unet/train_unet.py for a more concrete example.
+```
+from common import transforms, mri_data as data
+
+# Define the data transform class
+class DataTransform:
+   def __call__(self, kspace, seed, target):
+        # Preprocess the data here
+        masked_kspace = transforms.apply_mask(kspace)
+        image = transforms.ifft2(masked_kspace)
+        cropped_image = transforms.center_crop(transforms.complex_abs(image))
+        return cropped_image, target
+
+# Create the dataset (either single-coil or multi-coil)
+dataset = data.Slice(
+    root='path_to_data', # Change based on your setup
+    transform=DataTransform()
+)
+data_loader = DataLoader(dataset, batch_size)
+
+# Create pytorch model and optimizer
+my_model = build_pytorch_model()
+my_optim = build_pytorch_optimizer()
+
+# Train the model
+for epoch in range(num_epochs):
+    for masked_kspace, target in data_loader:
+        reconstruction = my_model(masked_kspace)
+        loss = mse_loss(reconstruction, target)
+        my_optim.zero_grad()
+        loss.backward()
+        optimizer.step()
+```
+
 ## Submitting to Leaderboard
 Run your model on the provided test data and create a zip file containing your
-predictions. Upload this to any publicly accessible cloud storage (e.g. Amazon
-S3, Dropbox etc) and then create a JSON file with your information.
+predictions. The `common/utils.py` file has a `save_reconstructions` function
+that saves the data in the correct format.
 
-The `common/utils.py` file has some convenience functions to help with this:
-* `save_reconstructions` function saves the data in the correct
- format.
-* `create_submission_file` creates a JSON file for submission.
-
-Submit the JSON file on the
-[EvalAI page](https://evalai.cloudcv.org/web/challenges/challenge-page/153/overview).
+Upload the zip file to any publicly accessible cloud storage (e.g. Amazon S3,
+Dropbox etc). Submit a link to the zip file on the [challenge website](http://fastmri.org/submit).
+You will need to create an account before submitting.
 
 ## License
 fastMRI is MIT licensed, as found in the LICENSE file.

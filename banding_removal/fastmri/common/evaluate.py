@@ -12,8 +12,7 @@ from argparse import ArgumentParser
 import h5py
 import numpy as np
 from runstats import Statistics
-from skimage.measure import compare_psnr
-from skimage.metrics import structural_similarity
+from skimage.metrics import peak_signal_noise_ratio,structural_similarity
 
 
 def mse(gt, pred):
@@ -28,7 +27,7 @@ def nmse(gt, pred):
 
 def psnr(gt, pred):
     """ Compute Peak Signal to Noise Ratio metric (PSNR) """
-    return compare_psnr(gt, pred, data_range=gt.max())
+    return peak_signal_noise_ratio(gt, pred, data_range=gt.max())
 
 
 def ssim(gt, pred):
